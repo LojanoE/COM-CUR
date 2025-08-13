@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compresión y Módulos Elásticos – Calculadora</title>
+  <!-- SheetJS (para exportar a Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f172a;           /* slate-900 */
+      --card:#111827;         /* gray-900 */
+      --muted:#334155;        /* slate-600 */
+      --text:#e5e7eb;         /* gray-200 */
+      --accent:#22d3ee;       /* cyan-400 */
+      --ok:#10b981;           /* emerald-500 */
+      --warn:#f59e0b;         /* amber-500 */
+      --danger:#ef4444;       /* red-500 */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(120deg,#0b1224,#0f172a);color:var(--text)}
+    header{position:sticky;top:0;background:rgba(17,24,39,.6);backdrop-filter:blur(6px);border-bottom:1px solid #1f2937;z-index:10}
+    header .wrap{max-width:1100px;margin:auto;display:flex;gap:14px;align-items:center;padding:10px 16px}
+    h1{font-size:1.2rem;margin:0}
+    .badge{font-size:.75rem;color:#081217;background:var(--accent);padding:2px 8px;border-radius:999px}
+
+    .container{max-width:1100px;margin:18px auto;padding:0 16px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+    @media (max-width:980px){.container{grid-template-columns:1fr}}
+
+    .card{background:linear-gradient(180deg,#0b1222,#0f172a 30%,#0b1222);border:1px solid #1f2937;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.22)}
+    .card h2{margin:0;padding:14px 16px;border-bottom:1px solid #1f2937;font-size:1.05rem}
+    .card .body{padding:14px 16px}
+
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .row{display:flex;gap:10px;align-items:center}
+    label{font-size:.86rem;color:#cbd5e1}
+    input,select,textarea{width:100%;background:#0b1222;color:var(--text);border:1px solid #23314b;border-radius:10px;padding:10px;outline:none}
+    input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+    .hint{font-size:.75rem;color:#9ca3af}
+
+    .kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .kpi .box{background:#0a1220;border:1px solid #1f2937;border-radius:12px;padding:10px}
+    .kpi .box .t{font-size:.78rem;color:#94a3b8}
+    .kpi .box .v{font:600 1.05rem/1.2 Inter}
+
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{background:#0b1222;border:1px solid #23314b;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#0ea5b1,#06b6d4);color:#081217;border:none}
+    button.ok{background:linear-gradient(180deg,#10b981,#059669);border:none}
+    button.warn{background:linear-gradient(180deg,#f59e0b,#d97706);border:none}
+
+    .gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .photo{border:1px dashed #374151;border-radius:12px;min-height:180px;display:grid;place-items:center;overflow:hidden;position:relative}
+    .photo img{width:100%;height:100%;object-fit:cover}
+    .photo input{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .photo .lbl{position:absolute;bottom:6px;left:6px;font-size:.75rem;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:999px}
+
+    footer{max-width:1100px;margin:20px auto 40px;padding:0 16px;color:#93c5fd;font-size:.8rem}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:#a7f3d0}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>📏 Ensayo de <strong>Compresión</strong> (muestra cilíndrica)</h1>
+      <span class="badge">Cálculos + Excel + Fotos</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- IZQUIERDA: ENTRADAS -->
+    <section class="card">
+      <h2>Datos de Entrada</h2>
+      <div class="body">
+        <div class="grid">
+          <div>
+            <label>ID de muestra</label>
+            <input id="idMuestra" placeholder="Ej: CP-01" />
+          </div>
+          <div>
+            <label>Operador</label>
+            <input id="operador" placeholder="Nombre" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div style="flex:1">
+            <label>Tipo de falla</label>
+            <select id="tipoFalla">
+              <option value="">— Selecciona —</option>
+              <option>Plano de corte diagonal</option>
+              <option>Fractura vertical</option>
+              <option>División vertical</option>
+              <option>Falla explosiva</option>
+              <option>Corte en plano existente</option>
+              <option>Desprendimiento</option>
+              <option>Falla cónica</option>
+            </select>
+          </div>
+        </div>
+
+        <h3>Mediciones de altura (mm)</h3>
+        <div class="grid-4">
+          <input class="altura" type="number" step="0.01" placeholder="h1" />
+          <input class="altura" type="number" step="0.01" placeholder="h2" />
+          <input class="altura" type="number" step="0.01" placeholder="h3" />
+          <input class="altura" type="number" step="0.01" placeholder="h4" />
+        </div>
+        <p class="hint">Coloca 2–4 lecturas. Se calculará h<sub>prom</sub>.</p>
+
+        <h3>Mediciones de diámetro (mm)</h3>
+        <div class="grid-4">
+          <input class="diam" type="number" step="0.01" placeholder="d1" />
+          <input class="diam" type="number" step="0.01" placeholder="d2" />
+          <input class="diam" type="number" step="0.01" placeholder="d3" />
+          <input class="diam" type="number" step="0.01" placeholder="d4" />
+        </div>
+        <p class="hint">Se calcula d<sub>prom</sub>, área A (mm²) y volumen.</p>
+
+        <div class="grid">
+          <div>
+            <label>Carga máxima F (kN)</label>
+            <input id="cargaKN" type="number" step="0.001" placeholder="Ej: 250" />
+            <div class="hint">Se calculará el esfuerzo σ = F/A (MPa).</div>
+          </div>
+          <div>
+            <label>Masa (g)</label>
+            <input id="masaG" type="number" step="0.01" placeholder="Ej: 1200" />
+            <div class="hint">Se calculará densidad (g/cm³) y (kg/m³).</div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="btnCalc">Calcular</button>
+          <button id="btnLimpiar">Limpiar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DERECHA: RESULTADOS Y FOTOS -->
+    <section class="card" id="resultCard">
+      <h2>Resultados</h2>
+      <div class="body">
+        <!-- Info extra que se desea en la ficha PNG -->
+        <div id="extraInfo" style="margin-bottom:10px; font-size:0.92rem; color:#a7f3d0"></div>
+
+        <div class="kpi">
+          <div class="box"><div class="t">Altura promedio hₚ (mm)</div><div class="v" id="k_h">—</div></div>
+          <div class="box"><div class="t">Diámetro promedio dₚ (mm)</div><div class="v" id="k_d">—</div></div>
+          <div class="box"><div class="t">Área A = π(dₚ²/4) (mm²)</div><div class="v" id="k_A">—</div></div>
+          <div class="box"><div class="t">Volumen V (cm³)</div><div class="v" id="k_V">—</div></div>
+          <div class="box"><div class="t">Esfuerzo σ (MPa)</div><div class="v" id="k_sigma">—</div></div>
+          <div class="box"><div class="t">Densidad ρ (g/cm³)</div><div class="v" id="k_rho_g">—</div></div>
+          <div class="box"><div class="t">Densidad ρ (kg/m³)</div><div class="v" id="k_rho_kg">—</div></div>
+          <div class="box"><div class="t">F (kN)</div><div class="v" id="k_F">—</div></div>
+        </div>
+
+        <h3 style="margin-top:14px">Fotos del ensayo</h3>
+        <div class="gallery">
+          <div class="photo">
+            <img id="imgAntes" alt="Antes del ensayo"/>
+            <input id="fileAntes" type="file" accept="image/*" capture="environment" />
+            <span class="lbl">Antes</span>
+          </div>
+          <div class="photo">
+            <img id="imgDespues" alt="Después del ensayo"/>
+            <input id="fileDespues" type="file" accept="image/*" capture="environment" />
+            <span class="lbl">Después</span>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="ok" id="btnExcel">Exportar Excel</button>
+          <button class="warn" id="btnGuardarPNG">Guardar ficha (PNG)</button>
+        </div>
+        <p class="hint">Las imágenes se incluyen como vínculos (data URL) dentro del Excel.
+          Para incrustarlas como imágenes nativas de Excel se requiere una librería de pago.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>Fórmulas usadas: <span class="mono">A = π·(d²/4)</span>,
+      <span class="mono">V = A·h</span> (mm³) → <span class="mono">V[cm³] = V/1000</span>,
+      <span class="mono">σ[MPa] = (F[kN]·1000)/A[mm²]</span>,
+      <span class="mono">ρ[g/cm³] = masa[g]/V[cm³]</span>,
+      <span class="mono">ρ[kg/m³] = ρ[g/cm³]·1000</span>.</div>
+  </footer>
+
+<script>
+function parseList(selector){
+  const vals=[...document.querySelectorAll(selector)]
+    .map(i=>parseFloat(i.value))
+    .filter(v=>!Number.isNaN(v));
+  return vals;
+}
+function mean(arr){if(arr.length===0) return NaN;return arr.reduce((a,b)=>a+b,0)/arr.length}
+function round(v,n=3){if(Number.isNaN(v)||!Number.isFinite(v)) return null;const f=Math.pow(10,n);return Math.round(v*f)/f}
+
+function fileToDataURL(file){
+  return new Promise((resolve)=>{
+    if(!file){resolve("");return}
+    const r=new FileReader();
+    r.onload=e=>resolve(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+async function calcular(){
+  const hVals=parseList('.altura');
+  const dVals=parseList('.diam');
+  const h=mean(hVals);              // mm
+  const d=mean(dVals);              // mm
+  const A = Math.PI*(d**2)/4;       // mm^2
+  const Vmm3 = A*h;                 // mm^3
+  const Vcm3 = Vmm3/1000;           // cm^3
+
+  const FkN = parseFloat(document.getElementById('cargaKN').value);
+  const masaG = parseFloat(document.getElementById('masaG').value);
+
+  const sigmaMPa = (!Number.isNaN(FkN) && A>0) ? (FkN*1000)/A : NaN;  // N/mm^2 = MPa
+  const rho_gcm3 = (!Number.isNaN(masaG) && Vcm3>0) ? (masaG/Vcm3) : NaN;
+  const rho_kgm3 = rho_gcm3*1000;
+
+  // Pintar KPIs
+  document.getElementById('k_h').textContent = h? round(h,3) : '—';
+  document.getElementById('k_d').textContent = d? round(d,3) : '—';
+  document.getElementById('k_A').textContent = A? round(A,3) : '—';
+  document.getElementById('k_V').textContent = Vcm3? round(Vcm3,3) : '—';
+  document.getElementById('k_sigma').textContent = sigmaMPa? round(sigmaMPa,3) : '—';
+  document.getElementById('k_rho_g').textContent = rho_gcm3? round(rho_gcm3,4) : '—';
+  document.getElementById('k_rho_kg').textContent = rho_kgm3? round(rho_kgm3,1) : '—';
+  document.getElementById('k_F').textContent = (!Number.isNaN(FkN))? round(FkN,3) : '—';
+
+  // Texto que aparecerá en la ficha PNG - Expandido con más campos
+  const idMuestra = document.getElementById('idMuestra').value || '—';
+  const operador = document.getElementById('operador').value || '—';
+  const tipoFalla = document.getElementById('tipoFalla').value || '—';
+  const info = [
+    `<strong>ID Muestra:</strong> ${idMuestra}`,
+    `<strong>Operador:</strong> ${operador}`,
+    `<strong>Tipo de falla:</strong> ${tipoFalla}`,
+    `<strong>Lecturas altura (mm):</strong> ${hVals.length? hVals.join(', ') : '—'}`,
+    `<strong>Lecturas diámetro (mm):</strong> ${dVals.length? dVals.join(', ') : '—'}`,
+    `<strong>Carga F:</strong> ${FkN? FkN + ' kN' : '—'}`,
+    `<strong>Masa:</strong> ${masaG? masaG + ' g' : '—'}`
+  ].join('<br>');
+  document.getElementById('extraInfo').innerHTML = info;
+
+  return {h, d, A, Vcm3, sigmaMPa, rho_gcm3, rho_kgm3, FkN, masaG, hVals, dVals, tipoFalla};
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{ if(i.type!=="file") i.value=''; });
+  document.getElementById('tipoFalla').value='';
+  document.getElementById('imgAntes').src='';
+  document.getElementById('imgDespues').src='';
+  ['k_h','k_d','k_A','k_V','k_sigma','k_rho_g','k_rho_kg','k_F']
+    .forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('extraInfo').innerHTML='';
+}
+
+// Vista previa fotos
+function bindPhoto(inputId,imgId){
+  const inp=document.getElementById(inputId);
+  const img=document.getElementById(imgId);
+  inp.addEventListener('change',()=>{
+    const f=inp.files?.[0];
+    if(!f){img.removeAttribute('src');return}
+    const url=URL.createObjectURL(f);
+    img.src=url;
+  });
+}
+
+// Exportar Excel (SheetJS)
+async function exportarExcel(){
+  const idMuestra=document.getElementById('idMuestra').value||'';
+  const operador=document.getElementById('operador').value||'';
+  const tipoFalla=document.getElementById('tipoFalla').value||'';
+
+  const {h,d,A,Vcm3,sigmaMPa,rho_gcm3,rho_kgm3,FkN,masaG,hVals,dVals}=await calcular();
+
+  // Convertir fotos a dataURL para guardar como texto (hipervínculo)
+  const fAntes=document.getElementById('fileAntes').files?.[0]||null;
+  const fDesp=document.getElementById('fileDespues').files?.[0]||null;
+  const urlAntes=await fileToDataURL(fAntes);
+  const urlDesp=await fileToDataURL(fDesp);
+
+  // Construir hoja principal
+  const rows=[
+    ["ID muestra", idMuestra],
+    ["Operador", operador],
+    ["Tipo de falla", tipoFalla],
+    ["Alturas (mm)", (hVals||[]).join(', ')],
+    ["Diámetros (mm)", (dVals||[]).join(', ')],
+    ["h_prom (mm)", round(h,3)],
+    ["d_prom (mm)", round(d,3)],
+    ["Área A (mm^2)", round(A,3)],
+    ["Volumen V (cm^3)", round(Vcm3,3)],
+    ["F (kN)", round(FkN,3)],
+    ["σ (MPa)", round(sigmaMPa,3)],
+    ["Masa (g)", round(masaG,3)],
+    ["ρ (g/cm^3)", round(rho_gcm3,4)],
+    ["ρ (kg/m^3)", round(rho_kgm3,1)],
+    ["Foto ANTES (data URL)", urlAntes ? urlAntes.slice(0,64)+"…" : ""],
+    ["Foto DESPUÉS (data URL)", urlDesp ? urlDesp.slice(0,64)+"…" : ""],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:28},{wch:60}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Compresion');
+
+  // Hoja con URLs completas por si desean recuperar las imágenes
+  if(urlAntes || urlDesp){
+    const ws2 = XLSX.utils.aoa_to_sheet([
+      ["Campo","Valor"],
+      ["Foto ANTES (data URL)", urlAntes||""],
+      ["Foto DESPUÉS (data URL)", urlDesp||""],
+    ]);
+    ws2['!cols']=[{wch:28},{wch:120}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Imagenes');
+  }
+
+  const nombre = `Ensayo_Compresion_${idMuestra||'sinID'}.xlsx`;
+  XLSX.writeFile(wb, nombre);
+}
+
+// Guardar ficha visual como PNG (captura del panel Resultados)
+async function guardarPNG(){
+  // Cargar html2canvas sólo si hace falta
+  if(!window.html2canvas){
+    await new Promise((res)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      s.onload=res;document.body.appendChild(s);
+    });
+  }
+  const panel = document.getElementById('resultCard');
+  const canvas = await window.html2canvas(panel,{backgroundColor:null,scale:2});
+  const a=document.createElement('a');
+  a.download=`Ficha_Compresion_${(document.getElementById('idMuestra').value||'sinID')}.png`;
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+}
+
+// Eventos
+bindPhoto('fileAntes','imgAntes');
+bindPhoto('fileDespues','imgDespues');
+document.getElementById('btnCalc').addEventListener('click', calcular);
+document.getElementById('btnLimpiar').addEventListener('click', limpiar);
+document.getElementById('btnExcel').addEventListener('click', exportarExcel);
+document.getElementById('btnGuardarPNG').addEventListener('click', guardarPNG);
+</script>
+</body>
+</html>
